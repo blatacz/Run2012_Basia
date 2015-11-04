@@ -178,8 +178,7 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
   hDYJetsQ->Scale(scale);
 
   sampleName = "WJets";
-  weight = getSampleNormalisation(sampleName);
-  scale = weight*lumi;
+  scale = getSampleNormalisation(sampleName);
   hWJets->Scale(scale);
   hWJetsQ->Scale(scale);
 
@@ -196,6 +195,13 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
   TH1F* dataIsoSS= new TH1F("dataIsoSS","; Iso; Events",50,0,0.5);
   TH1F* dataIsoOS= new TH1F("dataIsoOS","; Iso",50,0,0.5);
 
+  TH1F* dataIsoSSb= new TH1F("dataIsoSS","; Iso; Events",50,0,0.5);
+  TH1F* dataIsoOSb= new TH1F("dataIsoOS","; Iso",50,0,0.5);
+
+  dataIsoSSb->Add(hSoupQ,1);
+  dataIsoOSb->Add(hSoup,1);
+  dataIsoOSb->Divide(dataIsoSSb);
+
   dataIsoSS->Add(hSoupQ,1);
   dataIsoSS->Add(hWJetsQ,-1);
   dataIsoSS->Add(hDYJetsQ,-1);
@@ -207,11 +213,29 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
   dataIsoOS->Add(hDYJets,-1);
   dataIsoOS->Add(hTT,-1);
   dataIsoOS->Add(hOther,-1);
-//
+
   dataIsoOS->Divide(dataIsoSS);
 
+//funtion fitting
+  TF1 *line=new TF1("line","[1]*x+[0]",0.3,0.5);
+  line->SetParameter(0,1);
+  line->SetParameter(1,0.00009);
+  dataIsoOSb->Fit("line","","",0.3,0.5);
+
+  TF1 *line2=new TF1("line2","[0]",0.3,0.5);
+  line->SetParameter(0,1);
+  dataIsoOSb->Fit("line2","","",0.3,0.5);
+
   TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
-  dataIsoOS->Draw();
+  dataIsoOSb->Draw();
+
+  dataIsoOS->SetLineColor(kBlue);
+//  dataIsoOS->Draw("same");
+
+  line->SetLineColor(kRed);
+  line2->SetLineColor(kGreen);
+  line->Draw("same");
+  line2->Draw("same");
    c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
 
   return 1;
@@ -247,8 +271,7 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
   hDYJetsQ->Scale(scale);
 
   sampleName = "WJets";
-  weight = getSampleNormalisation(sampleName);
-  scale = weight*lumi;
+  scale = getSampleNormalisation(sampleName);
   hWJets->Scale(scale);
   hWJetsQ->Scale(scale);
 
@@ -352,9 +375,8 @@ std::pair<float,float> HTTHistograms::getWNormalisation(int selType){
   float intdata=datamtlo->Integral(0,datamtlo->GetNbinsX()+1);
 
   // Calculate weight
-  weight=intdata/inthWJets/lumi;
-  scale = weight*lumi;
-  hWJets->Scale(scale);
+  weight=intdata/inthWJets;
+  hWJets->Scale(weight);
 
   float dweight;
   float inthSoup = hSoup->Integral(0,hSoup->GetNbinsX()+1);
@@ -362,7 +384,9 @@ std::pair<float,float> HTTHistograms::getWNormalisation(int selType){
   float inthTT = hTT->Integral(0,hTT->GetNbinsX()+1);
   float inthOther = hOther->Integral(0,hOther->GetNbinsX()+1); 
 
-  dweight=((inthSoup+inthDYJets+inthTT+inthOther)/inthWJets/inthWJets+intdata*intdata/(inthWJets*inthWJets*inthWJets))/(lumi*lumi);
+  cout<<"!!!! inthSoup "<<inthSoup<<" inthDYJets "<<inthDYJets<<" inthTT "<<inthTT<<" inthOther "<<inthOther<<" inthWJets "<<inthWJets<<endl;
+  cout<<"!!!! weight "<<weight<<" dweight "<<dweight<<endl;
+  dweight=((inthSoup+inthDYJets+inthTT+inthOther)/inthWJets/inthWJets+intdata*intdata/(inthWJets*inthWJets*inthWJets));
   dweight=sqrt(dweight);
 
   return std::make_pair(weight, dweight);
@@ -387,8 +411,7 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   hDYJets->Scale(scale);
 
   sampleName = "WJets";
-  weight = getSampleNormalisation(sampleName);
-  scale = weight*lumi;
+  scale = getSampleNormalisation(sampleName);
   hWJets->Scale(scale);
 
   sampleName = "TT";
