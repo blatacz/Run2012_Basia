@@ -105,6 +105,7 @@ bool HTTHistograms::fill1DHistogram(const std::string& name, float val, float we
     if(name.find("h1DStats")!=std::string::npos) hTemplateName = "h1DStatsTemplate";
     if(name.find("h1DMt")!=std::string::npos) hTemplateName = "h1DMtTemplate";
     if(name.find("h1DPt")!=std::string::npos) hTemplateName = "h1DPtTemplate";
+    if(name.find("h1DIso")!=std::string::npos) hTemplateName = "h1DIsoTemplate";
     std::cout<<"Adding histogram: "<<name<<" "<<file_<<" "<<file_->fullPath()<<std::endl;
     this->add1DHistogram(name,"",
 			 this->get1DHistogram(hTemplateName,true)->GetNbinsX(),
@@ -129,6 +130,7 @@ void HTTHistograms::defineHistograms(){
    add1DHistogram("h1DSVFitTemplate",";SVFit mass [GeV/c^{2}]; Events",50,0,200,file_);
    add1DHistogram("h1DMtTemplate","; Transverse mass; Events",50,0,160,file_);
    add1DHistogram("h1DPtTemplate","; Momentum; Events",50,0,100,file_);
+   add1DHistogram("h1DIsoTemplate","; Isolation; Events",50,0,0.5,file_);
    histosInitialized_ = true;
  }
 }
@@ -136,12 +138,183 @@ void HTTHistograms::defineHistograms(){
 /////////////////////////////////////////////////////////
 void HTTHistograms::finalizeHistograms(int nRuns, float weight){
 
-  plotStack("NPV",0);
+//  plotStack("NPV",0);
   plotStack("SVfit",0);
-  plotStack("Mt",0);
+//  plotStack("Mt",0);
 
   plotAnyHistogram("h1DPtMuData");
 
+  QCDmuonsep(0);
+
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+  float HTTHistograms::QCDmuonsep(int selType){
+
+  std::string hName = "h1DIso";
+
+// SS selection
+  TH1F *hWJetsQ = get1DHistogram((hName+"WJets"+"qcdsel").c_str());
+  TH1F *hDYJetsQ = get1DHistogram((hName+"DY"+"qcdsel").c_str());
+  TH1F *hTTQ = get1DHistogram((hName+"TT"+"qcdsel").c_str());
+  TH1F *hOtherQ = get1DHistogram((hName+"Other"+"qcdsel").c_str());
+  TH1F *hSoupQ = get1DHistogram((hName+"Data"+"qcdsel").c_str());
+
+// OS selection
+  TH1F *hWJets = get1DHistogram((hName+"WJets").c_str());
+  TH1F *hDYJets = get1DHistogram((hName+"DY").c_str());
+  TH1F *hTT = get1DHistogram((hName+"TT").c_str());
+  TH1F *hOther = get1DHistogram((hName+"Other").c_str());
+  TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
+
+// normalisation:: czy to jest poprawne? lumi jest dla wszystkich tych probek taka sama?
+
+  float lumi = getLumi()/1000.0;
+  ///Normalise MC histograms according to cross sections
+  std::string sampleName = "DY";
+  float weight = getSampleNormalisation(sampleName);
+  float scale = weight*lumi;
+  hDYJets->Scale(scale);
+  hDYJetsQ->Scale(scale);
+
+  sampleName = "WJets";
+  weight = getSampleNormalisation(sampleName);
+  scale = weight*lumi;
+  hWJets->Scale(scale);
+  hWJetsQ->Scale(scale);
+
+  sampleName = "TT";
+  weight = getSampleNormalisation(sampleName);
+  scale = weight*lumi;
+  hTT->Scale(scale);
+  hOther->Scale(scale);
+  hTTQ->Scale(scale);
+  hOtherQ->Scale(scale);
+
+// OS and SS without background
+// NA RAZIE ZROBIC BEZ ODEJMOWANIA!!!
+  TH1F* dataIsoSS= new TH1F("dataIsoSS","; Iso; Events",50,0,0.5);
+  TH1F* dataIsoOS= new TH1F("dataIsoOS","; Iso",50,0,0.5);
+
+  dataIsoSS->Add(hSoupQ,1);
+  dataIsoSS->Add(hWJetsQ,-1);
+  dataIsoSS->Add(hDYJetsQ,-1);
+  dataIsoSS->Add(hTTQ,-1);
+  dataIsoSS->Add(hOtherQ,-1);
+
+  dataIsoOS->Add(hSoup,1);
+  dataIsoOS->Add(hWJets,-1);
+  dataIsoOS->Add(hDYJets,-1);
+  dataIsoOS->Add(hTT,-1);
+  dataIsoOS->Add(hOther,-1);
+//
+  dataIsoOS->Divide(dataIsoSS);
+
+  TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
+  dataIsoOS->Draw();
+   c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
+
+  return 1;
+}
+/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+  float  HTTHistograms::QCDbackground(int number,int selType){
+
+  std::string hName = "h1DSVfit";
+
+// SS selection
+  TH1F *hWJetsQ = get1DHistogram((hName+"WJets"+"qcdsel").c_str());
+  TH1F *hDYJetsQ = get1DHistogram((hName+"DY"+"qcdsel").c_str());
+  TH1F *hTTQ = get1DHistogram((hName+"TT"+"qcdsel").c_str());
+  TH1F *hOtherQ = get1DHistogram((hName+"Other"+"qcdsel").c_str());
+  TH1F *hSoupQ = get1DHistogram((hName+"Data"+"qcdsel").c_str());
+
+// OS selection
+  TH1F *hWJets = get1DHistogram((hName+"WJets").c_str());
+  TH1F *hDYJets = get1DHistogram((hName+"DY").c_str());
+  TH1F *hTT = get1DHistogram((hName+"TT").c_str());
+  TH1F *hOther = get1DHistogram((hName+"Other").c_str());
+  TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
+
+// normalisation:: czy to jest poprawne? lumi jest dla wszystkich tych probek taka sama?
+
+  float lumi = getLumi()/1000.0;
+  ///Normalise MC histograms according to cross sections
+  std::string sampleName = "DY";
+  float weight = getSampleNormalisation(sampleName);
+  float scale = weight*lumi;
+  hDYJets->Scale(scale);
+  hDYJetsQ->Scale(scale);
+
+  sampleName = "WJets";
+  weight = getSampleNormalisation(sampleName);
+  scale = weight*lumi;
+  hWJets->Scale(scale);
+  hWJetsQ->Scale(scale);
+
+  sampleName = "TT";
+  weight = getSampleNormalisation(sampleName);
+  scale = weight*lumi;
+  hTT->Scale(scale);
+  hOther->Scale(scale);
+  hTTQ->Scale(scale);
+  hOtherQ->Scale(scale);
+// OS and SS without background
+  TH1F* datamtloSS= new TH1F("datamtloSS","; SVFit; Events",50,0,200);
+  TH1F* datamtloOS= new TH1F("datamtloSS","; SVFit",50,0,200);
+
+  datamtloSS->Add(hSoupQ,1);
+  datamtloSS->Add(hWJetsQ,-1);
+  datamtloSS->Add(hDYJetsQ,-1);
+  datamtloSS->Add(hTTQ,-1);
+  datamtloSS->Add(hOtherQ,-1);
+
+  datamtloOS->Add(hSoup,1);
+  datamtloOS->Add(hWJets,-1);
+  datamtloOS->Add(hDYJets,-1);
+  datamtloOS->Add(hTT,-1);
+  datamtloOS->Add(hOther,-1);
+
+// OS/SS
+
+  float intOS=datamtloOS->Integral(0,datamtloOS->GetNbinsX()+1);
+  float intSS=datamtloSS->Integral(0,datamtloSS->GetNbinsX()+1);
+  float ratio=intOS/intSS;
+  std::cout<<"intOS "<<intOS<<" intSS "<<intSS<<" intOS/intSS "<<ratio<<std::endl;
+
+// plot histograms
+
+   hName = hName + "QCD";
+   TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
+
+  TLegend l(0.15,0.78,0.35,0.87,NULL,"brNDC");
+  l.SetTextSize(0.05);
+  l.SetFillStyle(4000);
+  l.SetBorderSize(0);
+  l.SetFillColor(10);
+
+    datamtloOS->SetYTitle("Events");
+    datamtloOS->GetYaxis()->SetTitleOffset(1.4);
+    datamtloOS->SetStats(kFALSE);
+    datamtloOS->SetLineWidth(2);
+    datamtloOS->SetLineColor(kRed);
+
+    datamtloSS->SetLineWidth(2);
+    datamtloSS->SetLineColor(kGreen);
+
+    datamtloOS->Draw();
+    datamtloSS->Draw("same");
+
+  TLegend *leg = new TLegend(0.79,0.32,0.99,0.82,NULL,"brNDC");
+  setupLegend(leg);
+  leg->AddEntry(datamtloOS,"OS","l");
+  leg->AddEntry(datamtloSS,"SS","l");
+  leg->Draw();
+
+    c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
+
+  cout<<"AAA "<<hName<<" ratio "<<ratio<<endl;
+  return ratio;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -200,11 +373,11 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
 
   std::string hName = "h1D"+varName;
 
-  TH1F *hWJets = get1DHistogram((hName+"WJets").c_str());
-  TH1F *hDYJets = get1DHistogram((hName+"DY").c_str());
-  TH1F *hTT = get1DHistogram((hName+"TT").c_str());
-  TH1F *hOther = get1DHistogram((hName+"Other").c_str());
-  TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
+  TH1F *hWJets = get1DHistogram((hName+"WJets"+"qcdsel").c_str());
+  TH1F *hDYJets = get1DHistogram((hName+"DY"+"qcdsel").c_str());
+  TH1F *hTT = get1DHistogram((hName+"TT"+"qcdsel").c_str());
+  TH1F *hOther = get1DHistogram((hName+"Other"+"qcdsel").c_str());
+  TH1F *hSoup = get1DHistogram((hName+"Data"+"qcdsel").c_str());
 
   float lumi = getLumi()/1000.0;
   ///Normalise MC histograms according to cross sections
