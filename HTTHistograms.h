@@ -45,9 +45,9 @@ class HTTHistograms: public AnalysisHistograms {
   THStack* plotStack2(std::string varName, int selType);
 
   std::pair<float,float> getWNormalisation(int selType);
+  std::pair<float,float> getQCDOStoSS(int selType);
+  TH1* getQCDbackground(int selType);
 
-  float QCDbackground(int number,int selType);
-  float QCDmuonsep(int selType);
 
   //Plot a single histogram.
   void plotAnyHistogram(const std::string & hName);

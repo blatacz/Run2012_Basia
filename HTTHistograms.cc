@@ -144,28 +144,48 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
 
   plotAnyHistogram("h1DPtMuData");
 
-  QCDmuonsep(0);
+  TH1F *h = (TH1F*)getQCDbackground(0);
+
+  std::string hName = "alamakota";
+   TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
+
+  TLegend l(0.15,0.78,0.35,0.87,NULL,"brNDC");
+  l.SetTextSize(0.05);
+  l.SetFillStyle(4000);
+  l.SetBorderSize(0);
+  l.SetFillColor(10);
+
+    h->SetLineWidth(2);
+    h->SetLineColor(kRed);
+    h->Draw();
+
+  TLegend *leg = new TLegend(0.79,0.32,0.99,0.82,NULL,"brNDC");
+  setupLegend(leg);
+  leg->AddEntry(h,"SS","l");
+  leg->Draw();
+
+    c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
 
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-  float HTTHistograms::QCDmuonsep(int selType){
+std::pair<float,float> HTTHistograms::getQCDOStoSS(int selType){
 
   std::string hName = "h1DIso";
 
 // SS selection
-  TH1F *hWJetsQ = get1DHistogram((hName+"WJets"+"qcdsel").c_str());
-  TH1F *hDYJetsQ = get1DHistogram((hName+"DY"+"qcdsel").c_str());
-  TH1F *hTTQ = get1DHistogram((hName+"TT"+"qcdsel").c_str());
-  TH1F *hOtherQ = get1DHistogram((hName+"Other"+"qcdsel").c_str());
-  TH1F *hSoupQ = get1DHistogram((hName+"Data"+"qcdsel").c_str());
+  TH1F *hWJetsQ = get1DHistogram((hName+"WJets"+"qcdselSS").c_str());
+  TH1F *hDYJetsQ = get1DHistogram((hName+"DY"+"qcdselSS").c_str());
+  TH1F *hTTQ = get1DHistogram((hName+"TT"+"qcdselSS").c_str());
+  TH1F *hOtherQ = get1DHistogram((hName+"Other"+"qcdselSS").c_str());
+  TH1F *hSoupQ = get1DHistogram((hName+"Data"+"qcdselSS").c_str());
 
 // OS selection
-  TH1F *hWJets = get1DHistogram((hName+"WJets").c_str());
-  TH1F *hDYJets = get1DHistogram((hName+"DY").c_str());
-  TH1F *hTT = get1DHistogram((hName+"TT").c_str());
-  TH1F *hOther = get1DHistogram((hName+"Other").c_str());
-  TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
+  TH1F *hWJets = get1DHistogram((hName+"WJets"+"qcdselOS").c_str());
+  TH1F *hDYJets = get1DHistogram((hName+"DY"+"qcdselOS").c_str());
+  TH1F *hTT = get1DHistogram((hName+"TT"+"qcdselOS").c_str());
+  TH1F *hOther = get1DHistogram((hName+"Other"+"qcdselOS").c_str());
+  TH1F *hSoup = get1DHistogram((hName+"Data"+"qcdselOS").c_str());
 
 // normalisation:: czy to jest poprawne? lumi jest dla wszystkich tych probek taka sama?
 
@@ -200,7 +220,6 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
 
   dataIsoSSb->Add(hSoupQ,1);
   dataIsoOSb->Add(hSoup,1);
-  dataIsoOSb->Divide(dataIsoSSb);
 
   dataIsoSS->Add(hSoupQ,1);
   dataIsoSS->Add(hWJetsQ,-1);
@@ -214,53 +233,64 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
   dataIsoOS->Add(hTT,-1);
   dataIsoOS->Add(hOther,-1);
 
+  TH1F* diffSS= new TH1F("diffSS","; Iso; Events",50,0,0.5);
+  TH1F* diffOS= new TH1F("diffOS","; Iso",50,0,0.5);
+  diffSS->Add(dataIsoSSb,1);
+  diffSS->Add(dataIsoSS,-1);
+  diffOS->Add(dataIsoOSb,1);
+  diffOS->Add(dataIsoOS,-1);
+
+// roznice w zliczeniach:
+  cout<<"!!!! roznica w zliczeniach miedzy histogramami; diffSS "<<diffSS->Integral(30,50)<<" diffOS "<<diffOS->Integral(30,50)<<endl;
+  cout<<"!!!! same histogramy; dataIsoSSb "<<dataIsoSSb->Integral(30,50)<<" dataIsoSS "<<dataIsoSS->Integral(30,50)<<" dataIsoOSb "<<dataIsoOSb->Integral(30,50)<<" dataIsoOS "<<dataIsoOS->Integral(30,50)<<endl;
+
+  dataIsoOSb->Divide(dataIsoSSb);
   dataIsoOS->Divide(dataIsoSS);
 
 //funtion fitting
-  TF1 *line=new TF1("line","[1]*x+[0]",0.3,0.5);
-  line->SetParameter(0,1);
-  line->SetParameter(1,0.00009);
-  dataIsoOSb->Fit("line","","",0.3,0.5);
 
   TF1 *line2=new TF1("line2","[0]",0.3,0.5);
-  line->SetParameter(0,1);
+  line2->SetParameter(0,1);
   dataIsoOSb->Fit("line2","","",0.3,0.5);
 
   TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
   dataIsoOSb->Draw();
 
-  dataIsoOS->SetLineColor(kBlue);
-//  dataIsoOS->Draw("same");
-
-  line->SetLineColor(kRed);
   line2->SetLineColor(kGreen);
-  line->Draw("same");
   line2->Draw("same");
    c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
 
-  return 1;
+// fitting do odjetych
+  hName=hName+"BezTla";
+  TF1 *line=new TF1("line","[0]",0.3,0.5);
+  line->SetParameter(0,1);
+  dataIsoOS->Fit("line","","",0.3,0.5);
+
+  TCanvas* c1 = new TCanvas("AnyHistogram","AnyHistogram",460,500);
+  dataIsoOS->Draw();
+
+  line->SetLineColor(kGreen);
+  line->Draw("same");
+   c1->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
+
+// OS/SS
+  float param, dparam;
+  param=line->GetParameter(0);
+  dparam=line->GetParError(0);
+  return std::make_pair(param, dparam);
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-  float  HTTHistograms::QCDbackground(int number,int selType){
+TH1* HTTHistograms::getQCDbackground(int selType){
 
   std::string hName = "h1DSVfit";
 
 // SS selection
-  TH1F *hWJetsQ = get1DHistogram((hName+"WJets"+"qcdsel").c_str());
-  TH1F *hDYJetsQ = get1DHistogram((hName+"DY"+"qcdsel").c_str());
-  TH1F *hTTQ = get1DHistogram((hName+"TT"+"qcdsel").c_str());
-  TH1F *hOtherQ = get1DHistogram((hName+"Other"+"qcdsel").c_str());
-  TH1F *hSoupQ = get1DHistogram((hName+"Data"+"qcdsel").c_str());
-
-// OS selection
-  TH1F *hWJets = get1DHistogram((hName+"WJets").c_str());
-  TH1F *hDYJets = get1DHistogram((hName+"DY").c_str());
-  TH1F *hTT = get1DHistogram((hName+"TT").c_str());
-  TH1F *hOther = get1DHistogram((hName+"Other").c_str());
-  TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
-
-// normalisation:: czy to jest poprawne? lumi jest dla wszystkich tych probek taka sama?
+  TH1F *hWJets = get1DHistogram((hName+"WJets"+"qcdselSS").c_str());
+  TH1F *hDYJets = get1DHistogram((hName+"DY"+"qcdselSS").c_str());
+  TH1F *hTT = get1DHistogram((hName+"TT"+"qcdselSS").c_str());
+  TH1F *hOther = get1DHistogram((hName+"Other"+"qcdselSS").c_str());
+  TH1F *hSoup = get1DHistogram((hName+"Data"+"qcdselSS").c_str());
 
   float lumi = getLumi()/1000.0;
   ///Normalise MC histograms according to cross sections
@@ -268,76 +298,33 @@ void HTTHistograms::finalizeHistograms(int nRuns, float weight){
   float weight = getSampleNormalisation(sampleName);
   float scale = weight*lumi;
   hDYJets->Scale(scale);
-  hDYJetsQ->Scale(scale);
 
   sampleName = "WJets";
   scale = getSampleNormalisation(sampleName);
   hWJets->Scale(scale);
-  hWJetsQ->Scale(scale);
 
   sampleName = "TT";
   weight = getSampleNormalisation(sampleName);
   scale = weight*lumi;
   hTT->Scale(scale);
   hOther->Scale(scale);
-  hTTQ->Scale(scale);
-  hOtherQ->Scale(scale);
+
 // OS and SS without background
-  TH1F* datamtloSS= new TH1F("datamtloSS","; SVFit; Events",50,0,200);
-  TH1F* datamtloOS= new TH1F("datamtloSS","; SVFit",50,0,200);
+  TH1F* QCDbackground= new TH1F("datamtloSS","; SVFit; Events",50,0,200);
 
-  datamtloSS->Add(hSoupQ,1);
-  datamtloSS->Add(hWJetsQ,-1);
-  datamtloSS->Add(hDYJetsQ,-1);
-  datamtloSS->Add(hTTQ,-1);
-  datamtloSS->Add(hOtherQ,-1);
+  QCDbackground->Add(hSoup,1);
+  QCDbackground->Add(hWJets,-1);
+  QCDbackground->Add(hDYJets,-1);
+  QCDbackground->Add(hTT,-1);
+  QCDbackground->Add(hOther,-1);
 
-  datamtloOS->Add(hSoup,1);
-  datamtloOS->Add(hWJets,-1);
-  datamtloOS->Add(hDYJets,-1);
-  datamtloOS->Add(hTT,-1);
-  datamtloOS->Add(hOther,-1);
+// scale background
+	std::pair<float,float> Sscale = getQCDOStoSS(0);
+	scale = Sscale.first;
+  	float dscale = Sscale.second;
+  QCDbackground->Scale(scale);
 
-// OS/SS
-
-  float intOS=datamtloOS->Integral(0,datamtloOS->GetNbinsX()+1);
-  float intSS=datamtloSS->Integral(0,datamtloSS->GetNbinsX()+1);
-  float ratio=intOS/intSS;
-  std::cout<<"intOS "<<intOS<<" intSS "<<intSS<<" intOS/intSS "<<ratio<<std::endl;
-
-// plot histograms
-
-   hName = hName + "QCD";
-   TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
-
-  TLegend l(0.15,0.78,0.35,0.87,NULL,"brNDC");
-  l.SetTextSize(0.05);
-  l.SetFillStyle(4000);
-  l.SetBorderSize(0);
-  l.SetFillColor(10);
-
-    datamtloOS->SetYTitle("Events");
-    datamtloOS->GetYaxis()->SetTitleOffset(1.4);
-    datamtloOS->SetStats(kFALSE);
-    datamtloOS->SetLineWidth(2);
-    datamtloOS->SetLineColor(kRed);
-
-    datamtloSS->SetLineWidth(2);
-    datamtloSS->SetLineColor(kGreen);
-
-    datamtloOS->Draw();
-    datamtloSS->Draw("same");
-
-  TLegend *leg = new TLegend(0.79,0.32,0.99,0.82,NULL,"brNDC");
-  setupLegend(leg);
-  leg->AddEntry(datamtloOS,"OS","l");
-  leg->AddEntry(datamtloSS,"SS","l");
-  leg->Draw();
-
-    c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
-
-  cout<<"AAA "<<hName<<" ratio "<<ratio<<endl;
-  return ratio;
+  return QCDbackground;
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
@@ -384,10 +371,11 @@ std::pair<float,float> HTTHistograms::getWNormalisation(int selType){
   float inthTT = hTT->Integral(0,hTT->GetNbinsX()+1);
   float inthOther = hOther->Integral(0,hOther->GetNbinsX()+1); 
 
-  cout<<"!!!! inthSoup "<<inthSoup<<" inthDYJets "<<inthDYJets<<" inthTT "<<inthTT<<" inthOther "<<inthOther<<" inthWJets "<<inthWJets<<endl;
-  cout<<"!!!! weight "<<weight<<" dweight "<<dweight<<endl;
   dweight=((inthSoup+inthDYJets+inthTT+inthOther)/inthWJets/inthWJets+intdata*intdata/(inthWJets*inthWJets*inthWJets));
   dweight=sqrt(dweight);
+
+  cout<<"!!!! inthSoup "<<inthSoup<<" inthDYJets "<<inthDYJets<<" inthTT "<<inthTT<<" inthOther "<<inthOther<<" inthWJets "<<inthWJets<<endl;
+  cout<<"!!!! weight "<<weight<<" dweight "<<dweight<<endl;
 
   return std::make_pair(weight, dweight);
 }
@@ -397,11 +385,14 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
 
   std::string hName = "h1D"+varName;
 
-  TH1F *hWJets = get1DHistogram((hName+"WJets"+"qcdsel").c_str());
-  TH1F *hDYJets = get1DHistogram((hName+"DY"+"qcdsel").c_str());
-  TH1F *hTT = get1DHistogram((hName+"TT"+"qcdsel").c_str());
-  TH1F *hOther = get1DHistogram((hName+"Other"+"qcdsel").c_str());
-  TH1F *hSoup = get1DHistogram((hName+"Data"+"qcdsel").c_str());
+  TH1F *hWJets = get1DHistogram((hName+"WJets").c_str());
+  TH1F *hDYJets = get1DHistogram((hName+"DY").c_str());
+  TH1F *hTT = get1DHistogram((hName+"TT").c_str());
+  TH1F *hOther = get1DHistogram((hName+"Other").c_str());
+  TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
+
+//!!!! UWAGA UWAGA DZIALA TYLKO DLA SVFIT !!!! !!!! !!!!
+  TH1F *hQCD = (TH1F*)getQCDbackground(0);
 
   float lumi = getLumi()/1000.0;
   ///Normalise MC histograms according to cross sections
@@ -428,6 +419,7 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   hDYJets->SetFillColor(28);
   hTT->SetFillColor(11);
   hOther->SetFillColor(30);
+  hQCD->SetFillColor(45);
 
   hSoup->SetLineWidth(3);
   int rebinFactor = 1;
@@ -438,17 +430,18 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   hTT->Rebin(rebinFactor);
   hOther->Rebin(rebinFactor);
   
-  
   THStack *hs = new THStack("hs","Stacked histograms");      
   /////////
   hs->Add(hOther,"hist");
   hs->Add(hTT,"hist");
   hs->Add(hWJets,"hist");
   hs->Add(hDYJets,"hist");
+  hs->Add(hQCD,"hist");
 
   ////////
   TH1F *hMCSum = (TH1F*)hWJets->Clone("hMCSum");
   hMCSum->Reset();
+  hMCSum->Add(hQCD);
   hMCSum->Add(hWJets);
   hMCSum->Add(hDYJets);
   hMCSum->Add(hTT);
@@ -460,6 +453,7 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   std::cout<<"MC Z->ll: "<<hDYJets->Integral(0,hDYJets->GetNbinsX()+1)<<std::endl;
   std::cout<<"MC tt: "<<hTT->Integral(0,hTT->GetNbinsX()+1)<<std::endl;
   std::cout<<"MC other: "<<hOther->Integral(0,hOther->GetNbinsX()+1)<<std::endl;  
+  std::cout<<"QCD: "<<hQCD->Integral(0,hQCD->GetNbinsX()+1)<<std::endl; 
 
   TCanvas *c1 = getDefaultCanvas();
   c1->SetName("c1");
@@ -516,6 +510,7 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   leg->AddEntry(hWJets,"W#rightarrow l #nu","f");
   leg->AddEntry(hTT,"t#bar{t}","f");
   leg->AddEntry(hOther,"Other","f");
+  leg->AddEntry(hQCD,"QCD","f");
   leg->SetHeader(Form("#int L = %.3f pb^{-1}",lumi));
   leg->Draw();
 
