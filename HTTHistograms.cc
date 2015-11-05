@@ -100,12 +100,12 @@ bool HTTHistograms::fill1DHistogram(const std::string& name, float val, float we
   
   std::string hTemplateName = "";
   if(!AnalysisHistograms::fill1DHistogram(name,val,weight)){
-    if(name.find("h1DNPV")!=std::string::npos) hTemplateName = "h1DNPVTemplate";
-    if(name.find("h1DSVfit")!=std::string::npos) hTemplateName = "h1DSVFitTemplate";
-    if(name.find("h1DStats")!=std::string::npos) hTemplateName = "h1DStatsTemplate";
-    if(name.find(w)!=std::string::npos) hTemplateName = "h1DMtTemplate";
-    if(name.find("h1DPt")!=std::string::npos) hTemplateName = "h1DPtTemplate";
-    if(name.find("h1DIso")!=std::string::npos) hTemplateName = "h1DIsoTemplate";
+     if(name.find("h1DNPV")!=std::string::npos) hTemplateName = "h1DNPVTemplate";
+     if(name.find("h1DSVfit")!=std::string::npos) hTemplateName = "h1DSVFitTemplate";
+     if(name.find("h1DStats")!=std::string::npos) hTemplateName = "h1DStatsTemplate";
+     if(name.find("h1DMt")!=std::string::npos) hTemplateName = "h1DMtTemplate";
+     if(name.find("h1DPt")!=std::string::npos) hTemplateName = "h1DPtTemplate";
+     if(name.find("h1DIso")!=std::string::npos) hTemplateName = "h1DIsoTemplate";
     std::cout<<"Adding histogram: "<<name<<" "<<file_<<" "<<file_->fullPath()<<std::endl;
     this->add1DHistogram(name,"",
 			 this->get1DHistogram(hTemplateName,true)->GetNbinsX(),
@@ -138,33 +138,11 @@ void HTTHistograms::defineHistograms(){
 /////////////////////////////////////////////////////////
 void HTTHistograms::finalizeHistograms(int nRuns, float weight){
 
-//  plotStack("NPV",0);
+  plotStack("NPV",0);
   plotStack("SVfit",0);
-//  plotStack("Mt",0);
+  plotStack("Mt",0);
 
   plotAnyHistogram("h1DPtMuData");
-
-  TH1F *h = (TH1F*)getQCDbackground(0);
-
-  std::string hName = "alamakota";
-   TCanvas* c = new TCanvas("AnyHistogram","AnyHistogram",460,500);
-
-  TLegend l(0.15,0.78,0.35,0.87,NULL,"brNDC");
-  l.SetTextSize(0.05);
-  l.SetFillStyle(4000);
-  l.SetBorderSize(0);
-  l.SetFillColor(10);
-
-    h->SetLineWidth(2);
-    h->SetLineColor(kRed);
-    h->Draw();
-
-  TLegend *leg = new TLegend(0.79,0.32,0.99,0.82,NULL,"brNDC");
-  setupLegend(leg);
-  leg->AddEntry(h,"SS","l");
-  leg->Draw();
-
-    c->Print(TString::Format("fig_png/%s.png",hName.c_str()).Data());
 
 }
 /////////////////////////////////////////////////////////
@@ -281,9 +259,9 @@ std::pair<float,float> HTTHistograms::getQCDOStoSS(int selType){
 }
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
-TH1* HTTHistograms::getQCDbackground(int selType){
+TH1* HTTHistograms::getQCDbackground(std::string varName, int selType){
 
-  std::string hName = "h1DSVfit";
+  std::string hName = "h1D"+varName;
 
 // SS selection
   TH1F *hWJets = get1DHistogram((hName+"WJets"+"qcdselSS").c_str());
@@ -310,7 +288,8 @@ TH1* HTTHistograms::getQCDbackground(int selType){
   hOther->Scale(scale);
 
 // OS and SS without background
-  TH1F* QCDbackground= new TH1F("datamtloSS","; SVFit; Events",50,0,200);
+// TU NALEZY ZMIENIC DEFINICJE TEGO HISTOGRAMU ABY BYL OGOLNY
+  TH1F* QCDbackground= new TH1F("datamtloSS","; QCD; Events",hSoup->GetNbinsX(),hSoup->GetXaxis()->GetXmin(),hSoup->GetXaxis()->GetXmax());
 
   QCDbackground->Add(hSoup,1);
   QCDbackground->Add(hWJets,-1);
@@ -392,7 +371,7 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   TH1F *hSoup = get1DHistogram((hName+"Data").c_str());
 
 //!!!! UWAGA UWAGA DZIALA TYLKO DLA SVFIT !!!! !!!! !!!!
-  TH1F *hQCD = (TH1F*)getQCDbackground(0);
+  TH1F *hQCD = (TH1F*)getQCDbackground(varName,0);
 
   float lumi = getLumi()/1000.0;
   ///Normalise MC histograms according to cross sections
@@ -432,20 +411,21 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
   
   THStack *hs = new THStack("hs","Stacked histograms");      
   /////////
+  hs->Add(hQCD,"hist");
   hs->Add(hOther,"hist");
   hs->Add(hTT,"hist");
   hs->Add(hWJets,"hist");
   hs->Add(hDYJets,"hist");
-  hs->Add(hQCD,"hist");
+
 
   ////////
   TH1F *hMCSum = (TH1F*)hWJets->Clone("hMCSum");
   hMCSum->Reset();
-  hMCSum->Add(hQCD);
   hMCSum->Add(hWJets);
   hMCSum->Add(hDYJets);
   hMCSum->Add(hTT);
   hMCSum->Add(hOther);
+  hMCSum->Add(hQCD);
 
   std::cout<<"Data: "<<hSoup->Integral(0,hSoup->GetNbinsX()+1)<<std::endl;
   std::cout<<"MC: "<<hMCSum->Integral(0,hMCSum->GetNbinsX()+1)<<std::endl;  

@@ -102,6 +102,8 @@ bool HTTAnalyzer::analyze(const EventProxyBase& iEvent){
 // to receive QCD background
   if(qcdSelectionSS && myEventProxy.combRelIsoLeg1DBetav2<0.1){
 	myHistos_->fill1DHistogram("h1DSVfit"+sampleName+"qcdselSS",myEventProxy.diTauNSVfitMass,eventWeight);
+	myHistos_->fill1DHistogram("h1DNPV"+sampleName+"qcdselSS",myEventProxy.numPV,eventWeight);
+	myHistos_->fill1DHistogram("h1DMt"+sampleName+"qcdselSS",myEventProxy.MtLeg1MVA,eventWeight);
   }
 
   if(!baselineSelection) return true;

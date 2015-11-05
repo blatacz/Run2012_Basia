@@ -46,7 +46,7 @@ class HTTHistograms: public AnalysisHistograms {
 
   std::pair<float,float> getWNormalisation(int selType);
   std::pair<float,float> getQCDOStoSS(int selType);
-  TH1* getQCDbackground(int selType);
+  TH1* getQCDbackground(std::string varName, int selType);
 
 
   //Plot a single histogram.
