@@ -103,7 +103,7 @@ bool HTTHistograms::fill1DHistogram(const std::string& name, float val, float we
     if(name.find("h1DNPV")!=std::string::npos) hTemplateName = "h1DNPVTemplate";
     if(name.find("h1DSVfit")!=std::string::npos) hTemplateName = "h1DSVFitTemplate";
     if(name.find("h1DStats")!=std::string::npos) hTemplateName = "h1DStatsTemplate";
-    if(name.find("h1DMt")!=std::string::npos) hTemplateName = "h1DMtTemplate";
+    if(name.find(w)!=std::string::npos) hTemplateName = "h1DMtTemplate";
     if(name.find("h1DPt")!=std::string::npos) hTemplateName = "h1DPtTemplate";
     if(name.find("h1DIso")!=std::string::npos) hTemplateName = "h1DIsoTemplate";
     std::cout<<"Adding histogram: "<<name<<" "<<file_<<" "<<file_->fullPath()<<std::endl;
@@ -542,8 +542,8 @@ THStack*  HTTHistograms::plotStack(std::string varName, int selType){
     hMCSum->SetBinError(i,0);
   }
   hMCSum->SetLineWidth(3);
-  hMCSum->SetMinimum(-1);
-  hMCSum->SetMaximum(1);
+  hMCSum->SetMinimum(-1.2);
+  hMCSum->SetMaximum(1.2);
   hMCSum->SetStats(kFALSE);
   hMCSum->Draw();
   TLine *aLine = new TLine(hMCSum->GetXaxis()->GetXmin(),0.0,highEnd,0.0);

@@ -74,30 +74,34 @@ bool HTTAnalyzer::analyze(const EventProxyBase& iEvent){
 
   bool Selection = myEventProxy.ptL1>20 && myEventProxy.isPFMuon && myEventProxy.isTightMuon &&
     myEventProxy.ptL2>20 && myEventProxy.muFlag!=1 && myEventProxy.vetoEvent==0 &&
-    myEventProxy.tightestHPSMVAWP>=0 &&
-    myEventProxy.pairIndex<1 && myEventProxy.HLTx==1 && (myEventProxy.run>=163269 || myEventProxy.run==1) &&
+    myEventProxy.tightestHPSMVAWP>=0 && myEventProxy.pairIndex<1 && 
+    myEventProxy.HLTx==1 && (myEventProxy.run>=163269 || myEventProxy.run==1) &&
     myEventProxy.HLTmatch==1;
-//wywalilam na chwile to: myEventProxy.combRelIsoLeg1DBetav2<0.1 &&
 
   bool wSelection = Selection && myEventProxy.diTauCharge==0 && myEventProxy.MtLeg1MVA>60 && myEventProxy.combRelIsoLeg1DBetav2<0.1;
 
-  bool qcdSelection = Selection && (myEventProxy.diTauCharge==2 || myEventProxy.diTauCharge==-2);
+  bool qcdSelectionSS = Selection && (myEventProxy.diTauCharge==2 || myEventProxy.diTauCharge==-2);
 
-  bool baselineSelection = Selection && myEventProxy.diTauCharge==0; // && myEventProxy.MtLeg1MVA<40, wywalone aby mozna bylo ogladac obrazki ;
+  bool qcdSelectionOS = Selection && myEventProxy.diTauCharge==0; // && myEventProxy.MtLeg1MVA<40, wywalone aby mozna bylo ogladac obrazki ;
+
+  bool baselineSelection = Selection && myEventProxy.diTauCharge==0 && myEventProxy.combRelIsoLeg1DBetav2<0.1;
 
   if(wSelection) {
 	  ///Fill transverse mass
   	myHistos_->fill1DHistogram("h1DMt"+sampleName+"wsel",myEventProxy.MtLeg1MVA,eventWeight);
   }
 
-  if(qcdSelection){
-	myHistos_->fill1DHistogram("h1DIso"+sampleName+"qcdsel",myEventProxy.combRelIsoLeg1DBetav2,eventWeight);
-	myHistos_->fill1DHistogram("h1DSVfit"+sampleName+"qcdsel",myEventProxy.diTauNSVfitMass,eventWeight);
+  if(qcdSelectionSS){
+	myHistos_->fill1DHistogram("h1DIso"+sampleName+"qcdselSS",myEventProxy.combRelIsoLeg1DBetav2,eventWeight);
   }
 
-  if(baselineSelection){
-	myHistos_->fill1DHistogram("h1DIso"+sampleName,myEventProxy.combRelIsoLeg1DBetav2,eventWeight);
-	myHistos_->fill1DHistogram("h1DSVfit"+sampleName,myEventProxy.diTauNSVfitMass,eventWeight);
+  if(qcdSelectionOS){
+	myHistos_->fill1DHistogram("h1DIso"+sampleName+"qcdselOS",myEventProxy.combRelIsoLeg1DBetav2,eventWeight);
+  }
+
+// to receive QCD background
+  if(qcdSelectionSS && myEventProxy.combRelIsoLeg1DBetav2<0.1){
+	myHistos_->fill1DHistogram("h1DSVfit"+sampleName+"qcdselSS",myEventProxy.diTauNSVfitMass,eventWeight);
   }
 
   if(!baselineSelection) return true;
