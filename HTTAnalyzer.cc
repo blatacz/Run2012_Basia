@@ -78,7 +78,9 @@ bool HTTAnalyzer::analyze(const EventProxyBase& iEvent){
     myEventProxy.HLTx==1 && (myEventProxy.run>=163269 || myEventProxy.run==1) &&
     myEventProxy.HLTmatch==1;
 
-  bool wSelection = Selection && myEventProxy.diTauCharge==0 && myEventProxy.MtLeg1MVA>60 && myEventProxy.combRelIsoLeg1DBetav2<0.1;
+  bool wSelection = Selection && myEventProxy.diTauCharge==0 && myEventProxy.MtLeg1MVA>70 && myEventProxy.combRelIsoLeg1DBetav2<0.1;
+
+  bool wSelectionSS = Selection && (myEventProxy.diTauCharge==2 || myEventProxy.diTauCharge==-2) && myEventProxy.MtLeg1MVA>70 && myEventProxy.combRelIsoLeg1DBetav2<0.1;
 
   bool qcdSelectionSS = Selection && (myEventProxy.diTauCharge==2 || myEventProxy.diTauCharge==-2);
 
@@ -86,9 +88,16 @@ bool HTTAnalyzer::analyze(const EventProxyBase& iEvent){
 
   bool baselineSelection = Selection && myEventProxy.diTauCharge==0 && myEventProxy.combRelIsoLeg1DBetav2<0.1;
 
+  bool ttSelection = Selection && (myEventProxy.nJets20BTagged>2);
+
   if(wSelection) {
 	  ///Fill transverse mass
-  	myHistos_->fill1DHistogram("h1DMt"+sampleName+"wsel",myEventProxy.MtLeg1MVA,eventWeight);
+  	myHistos_->fill1DHistogram("h1DMt"+sampleName+"wselOS",myEventProxy.MtLeg1MVA,eventWeight);
+  }
+
+  if(wSelectionSS) {
+	  ///Fill transverse mass
+  	myHistos_->fill1DHistogram("h1DMt"+sampleName+"wselSS",myEventProxy.MtLeg1MVA,eventWeight);
   }
 
   if(qcdSelectionSS){
@@ -104,6 +113,10 @@ bool HTTAnalyzer::analyze(const EventProxyBase& iEvent){
 	myHistos_->fill1DHistogram("h1DSVfit"+sampleName+"qcdselSS",myEventProxy.diTauNSVfitMass,eventWeight);
 	myHistos_->fill1DHistogram("h1DNPV"+sampleName+"qcdselSS",myEventProxy.numPV,eventWeight);
 	myHistos_->fill1DHistogram("h1DMt"+sampleName+"qcdselSS",myEventProxy.MtLeg1MVA,eventWeight);
+  }
+
+  if(ttSelection){
+	myHistos_->fill1DHistogram("h1DMt"+sampleName+"tt",myEventProxy.MtLeg1MVA,eventWeight);	
   }
 
   if(!baselineSelection) return true;

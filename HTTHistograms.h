@@ -28,7 +28,7 @@ class HTTHistograms: public AnalysisHistograms {
 
   float getLumi();
 
-  float getSampleNormalisation(const std::string & sampleName);
+  float getSampleNormalisation(const std::string & sampleName,std::string SSOS);
 
    private:
   
@@ -44,7 +44,8 @@ class HTTHistograms: public AnalysisHistograms {
 
   THStack* plotStack2(std::string varName, int selType);
 
-  std::pair<float,float> getWNormalisation(int selType);
+  std::pair<float,float> getWNormalisation(int selType,std::string SSOS);
+  std::pair<float,float> getTNormalisation(int selType);
   std::pair<float,float> getQCDOStoSS(int selType);
   TH1* getQCDbackground(std::string varName, int selType);
 
