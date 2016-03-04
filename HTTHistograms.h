@@ -1,4 +1,3 @@
-
 #ifndef HTTHistograms_h
 #define HTTHistograms_h
 
@@ -6,7 +5,11 @@
 //         Created:  wto, 29 wrz 2015, 22:03:48 CEST
 //
 //
+#include <string>
+
 #include "AnalysisHistograms.h"
+
+
 
 class THStack;
 
@@ -28,7 +31,23 @@ class HTTHistograms: public AnalysisHistograms {
 
   float getLumi();
 
-  float getSampleNormalisation(const std::string & sampleName,std::string SSOS);
+  ///Return sample normalisation based only on
+  ///luminosity and cross section.
+  ///MC to DATA scaling factors should be applied
+  ///on top of this normalisation.
+  float getSampleNormalisation(std::string sampleName);
+
+  ///Estimate QCD background using the SS/OS method.
+  std::pair<TH1*,TH1*> getQCDbackground(std::string varName, std::string selName, std::string SubSelName);
+
+  ///Calculate scaling factor for the WJets MC
+  ///SCaling factor is estimated in high Mt region.
+  ///Other backgrounds are subtracted, basing on MC
+  ///QCD contribution is neglected.
+  std::pair<float,float> getWNormalisation(std::string selName, std::string SubSelName);
+
+  ///Calculate QCD OS/SS ratiousing non isolated events.
+  std::pair<float,float> getQCDOStoSS(std::string selName, std::string SubSelName);
 
    private:
   
@@ -39,19 +58,27 @@ class HTTHistograms: public AnalysisHistograms {
 
   //Plot stacked histograms for each contributing process.
   //varName - name of variable to be plotted,
-  //selType - selection type, i.e. baseline, background estimation, etc.
-  THStack* plotStack(std::string varName, int selType);
+  //selName - selection type name. For baseline use empty string
+  THStack* plotStack(std::string varName, std::string selName, std::string SubSelName);
 
-  THStack* plotStack2(std::string varName, int selType);
+  void plotPhiDecayPlanes(const std::string& name);
 
-  std::pair<float,float> getWNormalisation(int selType,std::string SSOS);
-  std::pair<float,float> getTNormalisation(int selType);
-  std::pair<float,float> getQCDOStoSS(int selType);
-  TH1* getQCDbackground(std::string varName, int selType);
+  ///Return histogram for sum of all DY decay modes.
+  TH1F *get1D_DY_Histogram(const std::string& name);
 
+  ///Return histogram for sum of all WJet HT bins
+  TH1F *get1D_WJet_Histogram(const std::string& name);
 
-  //Plot a single histogram.
-  void plotAnyHistogram(const std::string & hName);
+  //Plot a single histogram. One has to provide the full
+  //histogram name, e.g. including h1D prefix.
+  void plotSingleHistogram(std::string hName);
+
+  //Asymmetrie
+  double MakeDiff(TH1F *hTTbar, TH1F* hDYJets, TH1F* hSoup, TH1F* hWJets, TH1F* hQCD, TH1F *hTTbarS, TH1F* hDYJetsS, TH1F* hSoupS, TH1F* hWJetsS, TH1F* hQCDS, std::string varName, std::string selName, std::string SubSelName);
+  THStack* PlotDiff(std::string varName, std::string selName, std::string SubSelName);
+  std::pair<TH1*,TH1*> PlotAsymm(std::string varName, std::string selName, std::string SubSelName);
+  double * WJetEstimation(std::string varName, std::string selName, std::string SubSelName);
+
 
 };
 
